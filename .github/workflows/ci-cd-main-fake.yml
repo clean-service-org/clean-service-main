@@ -45,3 +45,24 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/clean-service-main:${{ github.sha }}
+            NAME=clean-service-fake
+            PORT=8081
+            docker pull $IMAGE
+            docker rm -f $NAME || true
+            docker run -d --name $NAME --restart unless-stopped \
+              -p $PORT:8080 $IMAGE
+            # health check
+            for i in {1..20}; do curl -fsS http://localhost:$PORT/actuator/health && break; sleep 2; done
