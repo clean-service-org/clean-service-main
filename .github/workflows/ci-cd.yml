@@ -1,9 +1,9 @@
-# .github/workflows/ci-cd-main-fake.yml
-name: CI (main-fake)
+# .github/workflows/ci-cd.yml
+name: CI (main)
 
 on:
   push:
-    branches: [main-fake]
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -62,7 +62,7 @@ jobs:
             set -euo pipefail
             export PATH=/usr/bin:/usr/local/bin:$PATH
             IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/clean-service-main:${{ github.sha }}"
-            NAME="clean-service-fake"
+            NAME="clean-service"
             PORT=8080
             
             docker version >/dev/null
