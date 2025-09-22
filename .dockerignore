@@ -22,7 +22,7 @@ Thumbs.db
 .git
 .gitignore
 
-# Node (nếu có frontend trong cùng repo)
+# Node (if frontend exists in same repo)
 node_modules/
 dist/
 
