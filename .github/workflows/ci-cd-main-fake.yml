@@ -59,7 +59,7 @@ jobs:
           script: |
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/clean-service-main:${{ github.sha }}
             NAME=clean-service-fake
-            PORT=8081
+            PORT=8080
             docker pull $IMAGE
             docker rm -f $NAME || true
             docker run -d --name $NAME --restart unless-stopped \
