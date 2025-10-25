@@ -4,11 +4,15 @@ FROM eclipse-temurin:24-jdk-alpine AS build
 
 WORKDIR /app
 
+ARG ARTIFACTORY_URL
+ARG SNAPSHOT_REPO
+
 # Copy Maven wrapper and pom.xml first for better layer caching
 COPY mvnw .
 COPY mvnw.cmd .
 COPY .mvn/ .mvn/
 COPY pom.xml .
+COPY settings.xml .
 
 # Make Maven wrapper executable
 RUN chmod +x mvnw && java -version && ./mvnw -v
@@ -16,6 +20,8 @@ RUN chmod +x mvnw && java -version && ./mvnw -v
 # Resolve deps into cached ~/.m2
 RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B -T 1C -DskipTests \
+    -s settings.xml -Partifactory \
+    -Dartifactory.url="$ARTIFACTORY_URL" -Dsnapshot.repo="$SNAPSHOT_REPO" \
     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN \
     dependency:resolve
 
