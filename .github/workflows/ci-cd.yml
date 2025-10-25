@@ -15,6 +15,7 @@ concurrency:
 
 env:
   IMAGE_NAME: clean-service-main
+  CONTAINER_NAME: clean-service-main
 
 jobs:
   build-and-deploy:
@@ -86,22 +87,23 @@ jobs:
             echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ secrets.NEXUS_DOCKER_REGISTRY }} -u "${{ secrets.NEXUS_USERNAME }}" --password-stdin
             
             # Get current image tag (if running)
-            PREV_IMAGE=$(docker inspect --format='{{.Config.Image}}' clean-service-main 2>/dev/null || echo "")
+            PREV_IMAGE=$(docker inspect --format='{{.Config.Image}}' ${{ env.CONTAINER_NAME }} 2>/dev/null || echo "")
             
             # Pull and run new image (use commit SHA tag for rollback support)
             docker pull ${{ secrets.NEXUS_DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            docker stop clean-service-main || true
-            docker rm clean-service-main || true
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
             
             echo "Deploying image: ${{ secrets.NEXUS_DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
             docker run -d \
-              --name clean-service-main \
+              --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p 8080:8080 \
               ${{ secrets.NEXUS_DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            docker network connect ${{ secrets.NETWORK_NAME }} ${{ env.CONTAINER_NAME }}
             
             # Health check
-            for i in {1..20}; do
+            for i in {1..10}; do
               if curl -fsS "http://localhost:8080/actuator/health" >/dev/null; then
                 echo "Application is healthy"; exit 0
               fi
@@ -111,14 +113,14 @@ jobs:
             echo "Health check failed, rolling back..."
             
             # Stop failed container
-            docker stop clean-service-main || true
-            docker logs clean-service-main || true
-            docker rm clean-service-main || true
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker logs ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
             
             # Rollback if previous image exists
             if [ -n "$PREV_IMAGE" ]; then
               docker run -d \
-                --name clean-service-main \
+                --name ${{ env.CONTAINER_NAME }} \
                 --restart unless-stopped \
                 -p 8080:8080 \
                 "$PREV_IMAGE"
