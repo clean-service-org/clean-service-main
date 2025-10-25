@@ -93,6 +93,7 @@ jobs:
             docker stop clean-service-main || true
             docker rm clean-service-main || true
             
+            echo "Deploying image: ${{ secrets.NEXUS_DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
             docker run -d \
               --name clean-service-main \
               --restart unless-stopped \
@@ -111,6 +112,7 @@ jobs:
             
             # Stop failed container
             docker stop clean-service-main || true
+            docker logs clean-service-main || true
             docker rm clean-service-main || true
             
             # Rollback if previous image exists
