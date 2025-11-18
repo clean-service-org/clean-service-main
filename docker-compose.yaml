@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: clean-service-postgres
+    environment:
+      POSTGRES_DB: ${CLEAN_SERVICE_DB_NAME}
+      POSTGRES_USER: ${CLEAN_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${CLEAN_SERVICE_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - clean-service-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    container_name: clean-service-keycloak
+    command: start-dev # For development, use 'start' for production
+    environment:
+      KC_HOSTNAME: localhost
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: ${CLEAN_SERVICE_DB_NAME}
+      KC_DB_USERNAME: ${CLEAN_SERVICE_DB_USER}
+      KC_DB_PASSWORD: ${CLEAN_SERVICE_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${CLEAN_SERVICE_KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${CLEAN_SERVICE_KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: info
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8787/health/ready" ]
+      interval: 15s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "8787:8080"
+      - "8989:9000"
+    depends_on:
+      - postgres
+    networks:
+      - clean-service-network
+
+volumes:
+  postgres_data:
+
+networks:
+  clean-service-network:
+    external: true
